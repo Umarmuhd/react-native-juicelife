@@ -15,7 +15,9 @@ export function Workout({
   metaData,
   ...props
 }: WorkoutProps) {
-  // const [loaded, setLoaded] = React.useState(false);
+  const [loaded, setLoaded] = React.useState(false);
+
+  console.log({ loaded });
 
   if (!workoutId || !apiKey) {
     return (
@@ -30,7 +32,7 @@ export function Workout({
         uri: `https://juicelife-react.vercel.app/?workoutId=${workoutId}&apiKey=${apiKey}&metaData=${JSON.stringify(metaData)}&callback=${props.callback}`,
       }}
       style={{ flex: 1 }}
-      // onLoad={() => setLoaded(true)}
+      onLoad={() => setLoaded(true)}
     />
   );
 }
