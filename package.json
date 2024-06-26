@@ -1,6 +1,6 @@
 {
   "name": "react-native-juicelife",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "juicelife react native",
   "main": "lib/commonjs/index.js",
   "module": "lib/module/index.js",
