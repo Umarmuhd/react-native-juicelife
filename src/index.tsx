@@ -1,23 +1,68 @@
-import React from 'react';
-import { Text, View } from 'react-native';
-import { WebView } from 'react-native-webview';
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
+import {
+  Text,
+  View,
+  Modal,
+  SafeAreaView,
+  ActivityIndicator,
+} from 'react-native';
+import { WebView, type WebViewNavigation } from 'react-native-webview';
+import type { JuicelifeProps } from './types';
+import { v1 as uuid } from 'uuid';
 
-type WorkoutProps = {
-  workoutId: string;
-  apiKey: string;
-  metaData?: object;
-  callback?: string;
-};
+// const BASE_URL = 'http://localhost:5173';
+const BASE_URL = 'https://juicelife-react.vercel.app';
 
-export function Workout({
-  workoutId,
-  apiKey,
-  metaData,
-  ...props
-}: WorkoutProps) {
-  const [loaded, setLoaded] = React.useState(false);
+const CLOSE_URL = BASE_URL + '/close';
 
-  console.log({ loaded });
+const Juicelife: React.ForwardRefRenderFunction<
+  React.ReactNode,
+  JuicelifeProps
+> = ({ workoutId, apiKey, metaData, autoStart = false, onSuccess }, ref) => {
+  const [isLoading, setisLoading] = useState(true);
+  const [showModal, setshowModal] = useState(false);
+  const webView = useRef(null);
+
+  const sessionId = uuid();
+
+  useEffect(() => {
+    autoStartCheck();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  //@ts-ignore
+  useImperativeHandle(ref, () => ({
+    startWorkout() {
+      setshowModal(true);
+    },
+    cancelWorkout() {
+      setshowModal(false);
+    },
+  }));
+
+  const autoStartCheck = () => {
+    if (autoStart) {
+      setshowModal(true);
+    }
+  };
+
+  const onNavigationStateChange = (state: WebViewNavigation) => {
+    const { url } = state;
+    if (url === CLOSE_URL) {
+      setshowModal(false);
+      if (onSuccess) {
+        onSuccess({
+          status: 'success',
+          sessionId: sessionId,
+        });
+      }
+    }
+  };
 
   if (!workoutId || !apiKey) {
     return (
@@ -26,13 +71,35 @@ export function Workout({
       </View>
     );
   }
+
   return (
-    <WebView
-      source={{
-        uri: `https://juicelife-react.vercel.app/?workoutId=${workoutId}&apiKey=${apiKey}&metaData=${JSON.stringify(metaData)}&callback=${props.callback}`,
-      }}
+    <Modal
       style={{ flex: 1 }}
-      onLoad={() => setLoaded(true)}
-    />
+      visible={showModal}
+      animationType="slide"
+      transparent={false}
+    >
+      <SafeAreaView style={{ flex: 1 }}>
+        <WebView
+          style={{ flex: 1 }}
+          onLoadStart={() => setisLoading(true)}
+          onLoadEnd={() => setisLoading(false)}
+          onNavigationStateChange={onNavigationStateChange}
+          ref={webView}
+          cacheEnabled={false}
+          cacheMode={'LOAD_NO_CACHE'}
+          source={{
+            uri: `${BASE_URL}?workoutId=${workoutId}&apiKey=${apiKey}&metaData=${JSON.stringify(metaData)}&sessionId=${sessionId}`,
+          }}
+        />
+        {isLoading && (
+          <View>
+            <ActivityIndicator size="large" color={'green'} />
+          </View>
+        )}
+      </SafeAreaView>
+    </Modal>
   );
-}
+};
+
+export default forwardRef(Juicelife);
